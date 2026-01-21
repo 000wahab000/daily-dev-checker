@@ -1,0 +1,431 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 12,
+              "triggerAtMinute": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        480
+      ],
+      "id": "59639390-9f59-4f77-b3cc-733d42a771e4",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/users/000wahab000/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        800,
+        384
+      ],
+      "id": "5df738a8-ac47-48e7-bc5c-457ad6688125",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BC3BwjWK63DohHGp",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date().toISOString().slice(0, 10);\n\nconst commitsToday = items.filter(item =>\n  item.json.type === \"PushEvent\" &&\n  item.json.created_at.startsWith(today)\n);\n\nreturn [{\n  json: {\n    committedToday: commitsToday.length > 0,\n    count: commitsToday.length\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        384
+      ],
+      "id": "52ce0d9a-efa4-460c-80a6-c8937963749e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "https://alfa-leetcode-api.onrender.com/wahab_shaikjh/progress",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        800,
+        592
+      ],
+      "id": "4bf0eca4-d6b3-41de-9068-7db60283a9fd",
+      "name": "HTTP Request1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\n\n// total accepted questions (sum of easy+medium+hard)\nconst acceptedArray = items[0].json.numAcceptedQuestions.numAcceptedQuestions;\nconst currentAccepted = acceptedArray.reduce((sum, d) => sum + d.count, 0);\n\n// first run baseline\nconst previousAccepted = staticData.previousAccepted ?? currentAccepted;\n\n// did progress increase?\nconst solvedToday = currentAccepted > previousAccepted;\n\n// store for next run\nstaticData.previousAccepted = currentAccepted;\n\nreturn [{\n  json: {\n    solvedToday,\n    currentAccepted,\n    previousAccepted\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        592
+      ],
+      "id": "7694e961-aa38-4dca-89c9-b19156fd1305",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b9589745-7a78-417d-a580-aeb48fd64079",
+              "leftValue": "={{ $('Code in JavaScript').item.json.committedToday }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $('Code in JavaScript1').item.json.solvedToday }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1248,
+        480
+      ],
+      "id": "c7ce8915-05f8-4b8b-9bd5-38b38d026ea0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "2025.mohammed.shaikh@ves.ac.in",
+        "subject": "Daily Progress Check — Action Required",
+        "message": "No GitHub commits and no LeetCode progress were detected today.  This is your reminder to do at least one small task: - Solve 1 LeetCode problem OR - Push 1 commit  This check will run again later.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1616,
+        720
+      ],
+      "id": "5aafb691-99d6-45f5-aee9-e8adb67059af",
+      "name": "Send a message",
+      "webhookId": "62496cb7-a1ef-4f6f-abc6-bb31ddfce0c7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9kWPaivNaRi3WbpZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "2025.mohammed.shaikh@ves.ac.in",
+        "subject": "daily reminder",
+        "message": "u did your daily leet code and github push congratulations",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        384
+      ],
+      "id": "2f3e3ecb-f921-47f7-b530-3d5d3f4e8b9e",
+      "name": "Send a message1",
+      "webhookId": "2079a22a-2c9b-4a7d-80bb-e8465049e12d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9kWPaivNaRi3WbpZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b9589745-7a78-417d-a580-aeb48fd64079",
+              "leftValue": "={{ $('Code in JavaScript').item.json.committedToday }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $('Code in JavaScript1').item.json.solvedToday }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        592
+      ],
+      "id": "be1aa49a-0c3f-4f4a-af4f-cc258c8e26f5",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1463549825814626315/rOZY4l1CUDyv_zQhW2DCNMUgDkRRptvQ_z3Byktaw0j8pArYDZweCnlF6PnHM9liIt8y",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "⚠️ No GitHub commits and no LeetCode progress detected.\n\nStop scrolling. Solve one problem. Push one commit."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2144,
+        688
+      ],
+      "id": "8d90a8a4-6be2-435b-b408-c51291dbb66d",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Write a reminder email. Context: GitHub commits today: ' + $('Code in JavaScript').item.json.committedToday + ', LeetCode solved today: ' + $('Code in JavaScript1').item.json.solvedToday }}",
+        "options": {
+          "systemMessage": "You are an email writing assistant. Write short, firm reminder emails to college students. Be direct, calm, and professional. Do not be motivational or rude. Keep emails under 120 words."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1248,
+        848
+      ],
+      "id": "5492aa26-899a-4445-a962-1d35ee098e98",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1248,
+        1072
+      ],
+      "id": "443b72ad-0062-4728-94a3-d147eb15203f",
+      "name": "OpenAI Chat Model"
+    }
+  ],
+  "pinData": {
+    "HTTP Request2": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "40a9795c-a679-4093-aeeb-cfaab68b85b0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f962c0faf876b851b0db4ee3c230d44cb1aaf3fa3867eb985c4075e3d2814baf"
+  },
+  "id": "kkuD2sgu0owNsa22Fq3PQ",
+  "tags": []
+}
